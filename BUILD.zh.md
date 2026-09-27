@@ -42,3 +42,12 @@ uv run ruff format .
 ```bash
 uv build
 ```
+
+## 构建单文件 Windows 可执行版
+
+```bash
+uv run python scripts/build_exe.py
+```
+
+生成的可执行文件位于 `dist/kimi-session-manager.exe`。这是一个单文件绿色版，双击即可运行，不会弹出命令行窗口。
+

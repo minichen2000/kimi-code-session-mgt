@@ -42,3 +42,12 @@ uv run ruff format .
 ```bash
 uv build
 ```
+
+## Build Single-File Windows Executable
+
+```bash
+uv run python scripts/build_exe.py
+```
+
+The executable will be created at `dist/kimi-session-manager.exe`. It is a single-file, portable build that does not show a console window.
+
