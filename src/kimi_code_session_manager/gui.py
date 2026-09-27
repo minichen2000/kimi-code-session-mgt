@@ -14,9 +14,6 @@ from kimi_code_session_manager.utils import (
     reveal_in_file_manager,
 )
 
-PREVIEW_HEAD_LINES = 50
-PREVIEW_TAIL_LINES = 10
-
 
 class SessionManagerApp:
     """Main application window."""
@@ -24,7 +21,7 @@ class SessionManagerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Kimi Code Session Manager")
-        self.root.geometry("1200x800")
+        self.root.geometry("1400x800")
         self.root.minsize(900, 600)
 
         self.groups: list[WorkspaceGroup] = []
@@ -55,9 +52,9 @@ class SessionManagerApp:
         paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Left: grouped session tree
+        # Left: grouped session tree (main area)
         left_frame = ttk.Frame(paned)
-        paned.add(left_frame, weight=1)
+        paned.add(left_frame, weight=3)
 
         ttk.Label(left_frame, text="工作目录 / Sessions").pack(anchor=tk.W)
 
@@ -66,16 +63,18 @@ class SessionManagerApp:
 
         self.tree = ttk.Treeview(
             tree_frame,
-            columns=("updated", "size"),
+            columns=("updated", "size", "agents"),
             show="tree headings",
             selectmode="browse",
         )
         self.tree.heading("#0", text="名称", anchor=tk.W)
         self.tree.heading("updated", text="更新时间", anchor=tk.W)
         self.tree.heading("size", text="大小", anchor=tk.W)
-        self.tree.column("#0", width=280)
-        self.tree.column("updated", width=140)
-        self.tree.column("size", width=80)
+        self.tree.heading("agents", text="Agent 数", anchor=tk.W)
+        self.tree.column("#0", width=360)
+        self.tree.column("updated", width=150)
+        self.tree.column("size", width=90)
+        self.tree.column("agents", width=70)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -86,13 +85,13 @@ class SessionManagerApp:
 
         # Right: details and wire logs
         right_frame = ttk.Frame(paned)
-        paned.add(right_frame, weight=3)
+        paned.add(right_frame, weight=1)
 
         # Details panel
         details_frame = ttk.LabelFrame(right_frame, text="Session 详情", padding=10)
         details_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        self.detail_labels: dict[str, ttk.Label] = {}
+        self.detail_texts: dict[str, tk.Text] = {}
         detail_rows = [
             ("标题", "title"),
             ("ID", "session_id"),
@@ -107,9 +106,20 @@ class SessionManagerApp:
             ttk.Label(details_frame, text=f"{label_text}:").grid(
                 row=idx, column=0, sticky=tk.NW, padx=5, pady=2
             )
-            lbl = ttk.Label(details_frame, text="-", wraplength=700, justify=tk.LEFT)
-            lbl.grid(row=idx, column=1, sticky=tk.NW, padx=5, pady=2)
-            self.detail_labels[key] = lbl
+            txt = tk.Text(
+                details_frame,
+                height=1,
+                wrap=tk.WORD,
+                state=tk.DISABLED,
+                relief=tk.FLAT,
+                font=("Microsoft YaHei", 9),
+                padx=0,
+                pady=0,
+            )
+            txt.grid(row=idx, column=1, sticky=tk.EW, padx=5, pady=2)
+            self.detail_texts[key] = txt
+
+        details_frame.columnconfigure(1, weight=1)
 
         # Wire logs panel
         wire_frame = ttk.LabelFrame(right_frame, text="Agent wire.jsonl 日志", padding=10)
@@ -125,24 +135,19 @@ class SessionManagerApp:
             side=tk.LEFT, padx=2
         )
 
-        wire_paned = ttk.PanedWindow(wire_frame, orient=tk.VERTICAL)
-        wire_paned.pack(fill=tk.BOTH, expand=True, pady=5)
-
-        wire_list_frame = ttk.Frame(wire_paned)
-        wire_paned.add(wire_list_frame, weight=1)
+        wire_list_frame = ttk.Frame(wire_frame)
+        wire_list_frame.pack(fill=tk.BOTH, expand=True, pady=5)
 
         self.wire_tree = ttk.Treeview(
             wire_list_frame,
-            columns=("size", "lines"),
+            columns=("size",),
             show="headings",
             selectmode="browse",
         )
         self.wire_tree.heading("#0", text="Agent")
         self.wire_tree.heading("size", text="大小")
-        self.wire_tree.heading("lines", text="行数")
-        self.wire_tree.column("#0", width=150)
+        self.wire_tree.column("#0", width=120)
         self.wire_tree.column("size", width=80)
-        self.wire_tree.column("lines", width=80)
         self.wire_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         wire_tree_scroll = ttk.Scrollbar(
@@ -153,31 +158,6 @@ class SessionManagerApp:
 
         self.wire_tree.bind("<<TreeviewSelect>>", self._on_wire_select)
         self.wire_tree.bind("<Double-1>", lambda _e: self._reveal_wire())
-
-        preview_frame = ttk.Frame(wire_paned)
-        wire_paned.add(preview_frame, weight=2)
-
-        ttk.Label(preview_frame, text="文件预览（前 50 行 + 后 10 行）").pack(anchor=tk.W)
-
-        self.preview_text = tk.Text(
-            preview_frame,
-            wrap=tk.NONE,
-            state=tk.DISABLED,
-            font=("Consolas", 10),
-        )
-        self.preview_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        preview_scroll_y = ttk.Scrollbar(
-            preview_frame, orient=tk.VERTICAL, command=self.preview_text.yview
-        )
-        self.preview_text.configure(yscrollcommand=preview_scroll_y.set)
-        preview_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
-
-        preview_scroll_x = ttk.Scrollbar(
-            preview_frame, orient=tk.HORIZONTAL, command=self.preview_text.xview
-        )
-        self.preview_text.configure(xscrollcommand=preview_scroll_x.set)
-        preview_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
 
     def _build_status_bar(self) -> None:
         self.status = ttk.Label(self.root, text="就绪", relief=tk.SUNKEN, anchor=tk.W)
@@ -190,7 +170,7 @@ class SessionManagerApp:
         self.selected_session = None
         self.selected_wire = None
         self._clear_details()
-        self._clear_preview()
+        self._clear_wire_tree()
 
         try:
             self.groups = scan_all_sessions()
@@ -201,12 +181,11 @@ class SessionManagerApp:
         total_size = 0
         total_sessions = 0
         for group in self.groups:
-            group_size = sum(session.total_size for session in group.sessions)
             group_node = self.tree.insert(
                 "",
                 tk.END,
                 text=group.cwd,
-                values=("", format_size(group_size)),
+                values=("", "", ""),
                 open=True,
             )
             for session in group.sessions:
@@ -217,6 +196,7 @@ class SessionManagerApp:
                     values=(
                         format_timestamp_ms(session.updated_at),
                         format_size(session.total_size),
+                        len(session.agents),
                     ),
                 )
                 self.session_by_item[item] = session
@@ -245,27 +225,40 @@ class SessionManagerApp:
         self._populate_wire_tree(session)
 
     def _show_session_details(self, session: Session) -> None:
-        self.detail_labels["title"].config(text=session.title)
-        self.detail_labels["session_id"].config(text=session.session_id)
-        self.detail_labels["cwd"].config(text=session.cwd)
-        self.detail_labels["path"].config(text=str(session.session_dir))
-        self.detail_labels["created"].config(text=format_timestamp_ms(session.created_at))
-        self.detail_labels["updated"].config(text=format_timestamp_ms(session.updated_at))
-        self.detail_labels["size"].config(text=format_size(session.total_size))
-        self.detail_labels["agent_count"].config(text=str(len(session.agents)))
+        values = {
+            "title": session.title,
+            "session_id": session.session_id,
+            "cwd": session.cwd,
+            "path": str(session.session_dir),
+            "created": format_timestamp_ms(session.created_at),
+            "updated": format_timestamp_ms(session.updated_at),
+            "size": format_size(session.total_size),
+            "agent_count": str(len(session.agents)),
+        }
+        for key, value in values.items():
+            self._set_detail_text(key, value)
+
+    def _set_detail_text(self, key: str, value: str) -> None:
+        txt = self.detail_texts[key]
+        txt.config(state=tk.NORMAL)
+        txt.delete("1.0", tk.END)
+        txt.insert(tk.END, value)
+        txt.config(state=tk.DISABLED)
+        # Adjust height to fit wrapped content.
+        lines = int(txt.index(tk.END).split(".")[0]) - 1
+        txt.config(height=max(1, lines))
 
     def _populate_wire_tree(self, session: Session) -> None:
         self.wire_tree.delete(*self.wire_tree.get_children())
         self.wire_by_item.clear()
         self.selected_wire = None
-        self._clear_preview()
 
         for wire in session.agents:
             item = self.wire_tree.insert(
                 "",
                 tk.END,
                 text=wire.agent_name,
-                values=(format_size(wire.size), wire.line_count),
+                values=(format_size(wire.size),),
             )
             self.wire_by_item[item] = wire
 
@@ -280,42 +273,17 @@ class SessionManagerApp:
             return
 
         self.selected_wire = wire
-        self._show_preview(wire)
-
-    def _show_preview(self, wire: AgentWireLog) -> None:
-        self.preview_text.config(state=tk.NORMAL)
-        self.preview_text.delete("1.0", tk.END)
-
-        try:
-            with wire.path.open("r", encoding="utf-8", errors="replace") as f:
-                lines = f.readlines()
-        except OSError as e:
-            self.preview_text.insert(tk.END, f"无法读取文件：{e}")
-            self.preview_text.config(state=tk.DISABLED)
-            return
-
-        total = len(lines)
-        if total <= PREVIEW_HEAD_LINES + PREVIEW_TAIL_LINES:
-            self.preview_text.insert(tk.END, "".join(lines))
-        else:
-            head = lines[:PREVIEW_HEAD_LINES]
-            tail = lines[-PREVIEW_TAIL_LINES:]
-            self.preview_text.insert(tk.END, "".join(head))
-            self.preview_text.insert(
-                tk.END, f"\n... 省略 {total - PREVIEW_HEAD_LINES - PREVIEW_TAIL_LINES} 行 ...\n\n"
-            )
-            self.preview_text.insert(tk.END, "".join(tail))
-
-        self.preview_text.config(state=tk.DISABLED)
 
     def _clear_details(self) -> None:
-        for lbl in self.detail_labels.values():
-            lbl.config(text="-")
+        for txt in self.detail_texts.values():
+            txt.config(state=tk.NORMAL)
+            txt.delete("1.0", tk.END)
+            txt.config(state=tk.DISABLED)
+            txt.config(height=1)
 
-    def _clear_preview(self) -> None:
-        self.preview_text.config(state=tk.NORMAL)
-        self.preview_text.delete("1.0", tk.END)
-        self.preview_text.config(state=tk.DISABLED)
+    def _clear_wire_tree(self) -> None:
+        self.wire_tree.delete(*self.wire_tree.get_children())
+        self.wire_by_item.clear()
 
     def _reveal_session(self) -> None:
         session = self.selected_session
