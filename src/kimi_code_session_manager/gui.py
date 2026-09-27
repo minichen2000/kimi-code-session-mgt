@@ -52,14 +52,17 @@ class SessionManagerApp:
         self.refresh()
 
     def _center_window(self) -> None:
-        """Center the main window on the screen."""
+        """Center the main window on the usable screen area."""
         self.root.update_idletasks()
         width = 1400
         height = 750
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
+        # Reserve space for the Windows taskbar (usually at the bottom).
+        taskbar_height = 60
+        available_height = max(height, screen_height - taskbar_height)
         x = max(0, (screen_width - width) // 2)
-        y = max(0, (screen_height - height) // 2)
+        y = max(0, (available_height - height) // 2)
         self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def _on_paned_configure(self, _event: tk.Event | None = None) -> None:
