@@ -42,12 +42,14 @@ class SessionManagerApp:
         toolbar.pack(fill=tk.X)
 
         ttk.Button(toolbar, text="刷新", command=self.refresh).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="在文件夹中显示", command=self._reveal_session).pack(
-            side=tk.LEFT, padx=2
+        self.reveal_session_btn = ttk.Button(
+            toolbar, text="在文件夹中显示", command=self._reveal_session, state=tk.DISABLED
         )
-        ttk.Button(toolbar, text="删除 Session", command=self._delete_session).pack(
-            side=tk.LEFT, padx=2
+        self.reveal_session_btn.pack(side=tk.LEFT, padx=2)
+        self.delete_session_btn = ttk.Button(
+            toolbar, text="删除 Session", command=self._delete_session, state=tk.DISABLED
         )
+        self.delete_session_btn.pack(side=tk.LEFT, padx=2)
 
     def _build_main_layout(self) -> None:
         paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
@@ -85,20 +87,6 @@ class SessionManagerApp:
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
         self.tree.bind("<Motion>", self._on_tree_motion)
         self.tree.bind("<Leave>", self._on_tree_leave)
-
-        # Left bottom: full text of hovered/selected item
-        info_frame = ttk.LabelFrame(left_frame, text="当前选中完整信息", padding=5)
-        info_frame.pack(fill=tk.X, pady=5)
-
-        self.left_info_text = tk.Text(
-            info_frame,
-            height=3,
-            wrap=tk.WORD,
-            state=tk.DISABLED,
-            relief=tk.FLAT,
-            font=("Microsoft YaHei", 9),
-        )
-        self.left_info_text.pack(fill=tk.X, expand=True)
 
         # Right: details and wire logs
         right_frame = ttk.Frame(paned)
@@ -145,9 +133,10 @@ class SessionManagerApp:
         wire_top = ttk.Frame(wire_frame)
         wire_top.pack(fill=tk.X)
 
-        ttk.Button(wire_top, text="在文件夹中显示", command=self._reveal_wire).pack(
-            side=tk.LEFT, padx=2
+        self.reveal_wire_btn = ttk.Button(
+            wire_top, text="在文件夹中显示", command=self._reveal_wire, state=tk.DISABLED
         )
+        self.reveal_wire_btn.pack(side=tk.LEFT, padx=2)
         ttk.Button(wire_top, text="刷新选中 Session", command=self._refresh_selected_session).pack(
             side=tk.LEFT, padx=2
         )
@@ -222,30 +211,17 @@ class SessionManagerApp:
             text = f"工作目录：{text}"
 
         self._show_tooltip(text, event.x_root, event.y_root)
-        self._update_left_info(item)
 
     def _on_tree_leave(self, _event: tk.Event | None = None) -> None:
         self._hover_item = None
         self._hide_tooltip()
 
-    def _update_left_info(self, item: str | None = None) -> None:
-        if item is None:
-            selection = self.tree.selection()
-            item = selection[0] if selection else None
-
-        text = ""
-        if item:
-            display = self.tree.item(item, "text")
-            session = self.session_by_item.get(item)
-            if session is not None:
-                text = f"标题：{session.title}\nID：{session.session_id}\n工作目录：{session.cwd}"
-            else:
-                text = f"工作目录：{display}"
-
-        self.left_info_text.config(state=tk.NORMAL)
-        self.left_info_text.delete("1.0", tk.END)
-        self.left_info_text.insert(tk.END, text)
-        self.left_info_text.config(state=tk.DISABLED)
+    def _update_button_states(self) -> None:
+        session_selected = self.selected_session is not None
+        self.reveal_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
+        self.delete_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
+        wire_selected = self.selected_wire is not None
+        self.reveal_wire_btn.config(state=tk.NORMAL if wire_selected else tk.DISABLED)
 
     def refresh(self) -> None:
         self.tree.delete(*self.tree.get_children())
@@ -255,7 +231,7 @@ class SessionManagerApp:
         self.selected_wire = None
         self._clear_details()
         self._clear_wire_tree()
-        self._update_left_info()
+        self._update_button_states()
 
         try:
             self.groups = scan_all_sessions()
@@ -298,17 +274,25 @@ class SessionManagerApp:
     def _on_tree_select(self, _event: tk.Event | None = None) -> None:
         selection = self.tree.selection()
         if not selection:
+            self.selected_session = None
+            self._clear_details()
+            self._clear_wire_tree()
+            self._update_button_states()
             return
 
         item = selection[0]
         session = self.session_by_item.get(item)
         if session is None:
+            self.selected_session = None
+            self._clear_details()
+            self._clear_wire_tree()
+            self._update_button_states()
             return
 
         self.selected_session = session
         self._show_session_details(session)
         self._populate_wire_tree(session)
-        self._update_left_info(item)
+        self._update_button_states()
 
     def _show_session_details(self, session: Session) -> None:
         values = {
@@ -342,6 +326,7 @@ class SessionManagerApp:
         self.wire_tree.delete(*self.wire_tree.get_children())
         self.wire_by_item.clear()
         self.selected_wire = None
+        self._update_button_states()
 
         for wire in session.agents:
             item = self.wire_tree.insert(
@@ -355,14 +340,19 @@ class SessionManagerApp:
     def _on_wire_select(self, _event: tk.Event | None = None) -> None:
         selection = self.wire_tree.selection()
         if not selection:
+            self.selected_wire = None
+            self._update_button_states()
             return
 
         item = selection[0]
         wire = self.wire_by_item.get(item)
         if wire is None:
+            self.selected_wire = None
+            self._update_button_states()
             return
 
         self.selected_wire = wire
+        self._update_button_states()
 
     def _clear_details(self) -> None:
         for txt in self.detail_texts.values():
