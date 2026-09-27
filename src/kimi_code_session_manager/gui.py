@@ -144,7 +144,7 @@ class SessionManagerApp:
         self.tree.column("#0", width=420, minwidth=200, stretch=True)
         self.tree.column("updated", width=150, minwidth=100, stretch=False)
         self.tree.column("size", width=70, minwidth=50, stretch=False)
-        self.tree.column("agents", width=65, minwidth=50, stretch=False)
+        self.tree.column("agents", width=80, minwidth=60, stretch=False)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.tree.tag_configure("even", background="#ffffff")
@@ -265,7 +265,7 @@ class SessionManagerApp:
         heading_font = (_FONT_FAMILY, size, "bold")
 
         self._style.configure(".", font=font)
-        self._style.configure("Treeview", font=font, rowheight=max(24, size * 2 + 4))
+        self._style.configure("Treeview", font=font, rowheight=max(30, size * 2 + 8))
         self._style.configure("Treeview.Heading", font=heading_font)
 
         for txt in self._text_widgets:
