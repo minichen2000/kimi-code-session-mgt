@@ -48,6 +48,13 @@ class SessionManagerApp:
 
         self._apply_font_size(_FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
         self.refresh()
+        self.root.after(100, self._set_sash_position)
+
+    def _set_sash_position(self) -> None:
+        """Set the initial sash position so the left pane takes ~70% width."""
+        width = self._paned.winfo_width()
+        if width > 0:
+            self._paned.sashpos(0, int(width * 0.7))  # type: ignore[no-untyped-call]
 
     def _build_toolbar(self) -> None:
         toolbar = ttk.Frame(self.root, padding=5)
@@ -75,12 +82,12 @@ class SessionManagerApp:
         ttk.Label(toolbar, text="字体:").pack(side=tk.RIGHT, padx=(10, 2))
 
     def _build_main_layout(self) -> None:
-        paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        self._paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Left: grouped session tree (main area)
-        left_frame = ttk.Frame(paned)
-        paned.add(left_frame, weight=2)
+        left_frame = ttk.Frame(self._paned)
+        self._paned.add(left_frame, weight=7)
 
         ttk.Label(left_frame, text="工作目录 / Sessions").pack(anchor=tk.W)
 
@@ -112,8 +119,8 @@ class SessionManagerApp:
         self.tree.bind("<Leave>", self._on_tree_leave)
 
         # Right: details and wire logs
-        right_frame = ttk.Frame(paned)
-        paned.add(right_frame, weight=1)
+        right_frame = ttk.Frame(self._paned)
+        self._paned.add(right_frame, weight=3)
 
         # Details panel
         details_frame = ttk.LabelFrame(right_frame, text="Session 详情", padding=10)
