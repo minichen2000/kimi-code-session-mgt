@@ -42,6 +42,8 @@ class SessionManagerApp:
         self._text_widgets: list[tk.Text] = []
         self._current_font_label = tk.StringVar(value=_DEFAULT_FONT_SIZE_LABEL)
         self._sash_set = False
+        self._sort_column: str | None = None
+        self._sort_reverse = False
 
         self._build_toolbar()
         self._build_main_layout()
@@ -58,6 +60,29 @@ class SessionManagerApp:
         if width > 100:
             self._paned.sashpos(0, int(width * 0.7))  # type: ignore[no-untyped-call]
             self._sash_set = True
+
+    def _on_heading_click(self, column: str) -> None:
+        """Sort sessions inside each group by the clicked column."""
+        if self._sort_column == column:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_column = column
+            # Default to descending for numeric/time columns, ascending for name.
+            self._sort_reverse = column != "#0"
+        self.refresh()
+
+    def _sort_sessions(self, sessions: list[Session]) -> list[Session]:
+        column = self._sort_column
+        reverse = self._sort_reverse
+        if column == "updated":
+            return sorted(sessions, key=lambda s: s.updated_at, reverse=reverse)
+        if column == "size":
+            return sorted(sessions, key=lambda s: s.total_size, reverse=reverse)
+        if column == "agents":
+            return sorted(sessions, key=lambda s: len(s.agents), reverse=reverse)
+        if column == "#0":
+            return sorted(sessions, key=lambda s: s.title or s.session_id, reverse=reverse)
+        return sessions
 
     def _build_toolbar(self) -> None:
         toolbar = ttk.Frame(self.root, padding=5)
@@ -104,10 +129,21 @@ class SessionManagerApp:
             show="tree headings",
             selectmode="browse",
         )
-        self.tree.heading("#0", text="名称", anchor=tk.W)
-        self.tree.heading("updated", text="更新时间", anchor=tk.W)
-        self.tree.heading("size", text="大小", anchor=tk.W)
-        self.tree.heading("agents", text="Agent 数", anchor=tk.W)
+        self.tree.heading(
+            "#0", text="名称", anchor=tk.W, command=lambda: self._on_heading_click("#0")
+        )
+        self.tree.heading(
+            "updated",
+            text="更新时间",
+            anchor=tk.W,
+            command=lambda: self._on_heading_click("updated"),
+        )
+        self.tree.heading(
+            "size", text="大小", anchor=tk.W, command=lambda: self._on_heading_click("size")
+        )
+        self.tree.heading(
+            "agents", text="Agent 数", anchor=tk.W, command=lambda: self._on_heading_click("agents")
+        )
         self.tree.column("#0", width=420, minwidth=200, stretch=True)
         self.tree.column("updated", width=150, minwidth=100, stretch=False)
         self.tree.column("size", width=70, minwidth=50, stretch=False)
@@ -308,7 +344,7 @@ class SessionManagerApp:
                 open=True,
             )
             self.group_by_item[group_node] = group
-            for session in group.sessions:
+            for session in self._sort_sessions(group.sessions):
                 item = self.tree.insert(
                     group_node,
                     tk.END,
