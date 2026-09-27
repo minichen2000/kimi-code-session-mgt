@@ -63,7 +63,6 @@ class SessionManagerApp:
         )
         self.delete_session_btn.pack(side=tk.LEFT, padx=2)
 
-        ttk.Label(toolbar, text="字体:").pack(side=tk.RIGHT, padx=(10, 2))
         font_combo = ttk.Combobox(
             toolbar,
             textvariable=self._current_font_label,
@@ -73,6 +72,7 @@ class SessionManagerApp:
         )
         font_combo.pack(side=tk.RIGHT, padx=2)
         font_combo.bind("<<ComboboxSelected>>", self._on_font_changed)
+        ttk.Label(toolbar, text="字体:").pack(side=tk.RIGHT, padx=(10, 2))
 
     def _build_main_layout(self) -> None:
         paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
