@@ -48,7 +48,12 @@ class SessionManagerApp:
 
         self._apply_font_size(_FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
         self.refresh()
-        self.root.after(100, self._set_sash_position)
+        self.root.bind("<Map>", self._on_window_mapped)
+
+    def _on_window_mapped(self, _event: tk.Event) -> None:
+        """Called once when the window is first shown."""
+        self.root.unbind("<Map>")
+        self._set_sash_position()
 
     def _set_sash_position(self) -> None:
         """Set the initial sash position so the left pane takes ~70% width."""
