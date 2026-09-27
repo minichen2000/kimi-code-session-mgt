@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import shutil
 import tkinter as tk
-from pathlib import Path
 from tkinter import messagebox, ttk
 
-from kimi_code_session_manager.models import AgentWireLog, Session, WorkspaceGroup
+from kimi_code_session_manager.models import AgentWireLog, Session
 from kimi_code_session_manager.scanner import scan_all_sessions
 from kimi_code_session_manager.utils import (
     format_size,
@@ -29,12 +28,10 @@ class SessionManagerApp:
         self.root.geometry("1400x800")
         self.root.minsize(1000, 650)
 
-        self.groups: list[WorkspaceGroup] = []
+        self.sessions: list[Session] = []
         self.session_by_item: dict[str, Session] = {}
-        self.group_by_item: dict[str, WorkspaceGroup] = {}
         self.wire_by_item: dict[str, AgentWireLog] = {}
         self.selected_session: Session | None = None
-        self.selected_group: WorkspaceGroup | None = None
         self.selected_wire: AgentWireLog | None = None
         self._hover_item: str | None = None
 
@@ -62,7 +59,7 @@ class SessionManagerApp:
             self._sash_set = True
 
     def _on_heading_click(self, column: str) -> None:
-        """Sort sessions inside each group by the clicked column."""
+        """Sort all sessions by the clicked column."""
         if self._sort_column == column:
             self._sort_reverse = not self._sort_reverse
         else:
@@ -114,11 +111,11 @@ class SessionManagerApp:
         self._paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self._paned.bind("<Configure>", self._on_paned_configure)
 
-        # Left: grouped session tree (main area)
+        # Left: session list (main area)
         left_frame = ttk.Frame(self._paned)
         self._paned.add(left_frame, weight=7)
 
-        ttk.Label(left_frame, text="工作目录 / Sessions").pack(anchor=tk.W)
+        ttk.Label(left_frame, text="Sessions").pack(anchor=tk.W)
 
         tree_frame = ttk.Frame(left_frame)
         tree_frame.pack(fill=tk.BOTH, expand=True)
@@ -293,12 +290,11 @@ class SessionManagerApp:
             self._hide_tooltip()
             return
 
-        text = self.tree.item(item, "text")
         session = self.session_by_item.get(item)
         if session is not None:
             text = f"{session.title}\n{session.session_id}\n{session.cwd}"
-        elif text:
-            text = f"工作目录：{text}"
+        else:
+            text = ""
 
         self._show_tooltip(text, event.x_root, event.y_root)
 
@@ -307,70 +303,55 @@ class SessionManagerApp:
         self._hide_tooltip()
 
     def _update_button_states(self) -> None:
-        reveal_enabled = self.selected_session is not None or self.selected_group is not None
-        self.reveal_session_btn.config(state=tk.NORMAL if reveal_enabled else tk.DISABLED)
-        self.delete_session_btn.config(
-            state=tk.NORMAL if self.selected_session is not None else tk.DISABLED
-        )
+        session_selected = self.selected_session is not None
+        self.reveal_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
+        self.delete_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
         wire_selected = self.selected_wire is not None
         self.reveal_wire_btn.config(state=tk.NORMAL if wire_selected else tk.DISABLED)
 
     def refresh(self) -> None:
         self.tree.delete(*self.tree.get_children())
         self.session_by_item.clear()
-        self.group_by_item.clear()
         self.wire_by_item.clear()
         self.selected_session = None
-        self.selected_group = None
         self.selected_wire = None
         self._clear_details()
         self._clear_wire_tree()
         self._update_button_states()
 
         try:
-            self.groups = scan_all_sessions()
+            groups = scan_all_sessions()
         except OSError as e:
             messagebox.showerror("扫描失败", f"无法读取 session 目录：{e}")
             return
 
-        total_size = 0
-        total_sessions = 0
-        for group in self.groups:
-            group_node = self.tree.insert(
+        self.sessions = []
+        for group in groups:
+            self.sessions.extend(group.sessions)
+
+        total_size = sum(session.total_size for session in self.sessions)
+        total_sessions = len(self.sessions)
+
+        for session in self._sort_sessions(self.sessions):
+            item = self.tree.insert(
                 "",
                 tk.END,
-                text=group.cwd,
-                values=("", "", ""),
-                open=True,
+                text=session.title or session.session_id,
+                values=(
+                    format_timestamp_ms(session.updated_at),
+                    format_size(session.total_size),
+                    len(session.agents),
+                ),
             )
-            self.group_by_item[group_node] = group
-            for session in self._sort_sessions(group.sessions):
-                item = self.tree.insert(
-                    group_node,
-                    tk.END,
-                    text=session.title or session.session_id,
-                    values=(
-                        format_timestamp_ms(session.updated_at),
-                        format_size(session.total_size),
-                        len(session.agents),
-                    ),
-                )
-                self.session_by_item[item] = session
-                total_size += session.total_size
-                total_sessions += 1
+            self.session_by_item[item] = session
 
-        status_text = (
-            f"共 {len(self.groups)} 个工作目录，"
-            f"{total_sessions} 个 session，"
-            f"总计 {format_size(total_size)}"
-        )
+        status_text = f"共 {total_sessions} 个 session，总计 {format_size(total_size)}"
         self.status.config(text=status_text)
 
     def _on_tree_select(self, _event: tk.Event | None = None) -> None:
         selection = self.tree.selection()
         if not selection:
             self.selected_session = None
-            self.selected_group = None
             self._clear_details()
             self._clear_wire_tree()
             self._update_button_states()
@@ -378,27 +359,16 @@ class SessionManagerApp:
 
         item = selection[0]
         session = self.session_by_item.get(item)
-        if session is not None:
-            self.selected_session = session
-            self.selected_group = None
-            self._show_session_details(session)
-            self._populate_wire_tree(session)
-            self._update_button_states()
-            return
-
-        group = self.group_by_item.get(item)
-        if group is not None:
+        if session is None:
             self.selected_session = None
-            self.selected_group = group
             self._clear_details()
             self._clear_wire_tree()
             self._update_button_states()
             return
 
-        self.selected_session = None
-        self.selected_group = None
-        self._clear_details()
-        self._clear_wire_tree()
+        self.selected_session = session
+        self._show_session_details(session)
+        self._populate_wire_tree(session)
         self._update_button_states()
 
     def _show_session_details(self, session: Session) -> None:
@@ -473,12 +443,11 @@ class SessionManagerApp:
         self.wire_by_item.clear()
 
     def _reveal_session(self) -> None:
-        if self.selected_session is not None:
-            reveal_in_file_manager(self.selected_session.session_dir)
-        elif self.selected_group is not None:
-            reveal_in_file_manager(Path(self.selected_group.cwd))
-        else:
-            messagebox.showinfo("提示", "请先选择一个 session 或工作目录")
+        session = self.selected_session
+        if session is None:
+            messagebox.showinfo("提示", "请先选择一个 session")
+            return
+        reveal_in_file_manager(session.session_dir)
 
     def _reveal_wire(self) -> None:
         wire = self.selected_wire
