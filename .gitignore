@@ -53,3 +53,7 @@ dmypy.json
 
 # Ruff
 .ruff_cache/
+
+# PyInstaller
+*.spec
+

@@ -74,7 +74,7 @@ class SessionManagerApp:
         if column == "updated":
             return sorted(sessions, key=lambda s: s.updated_at, reverse=reverse)
         if column == "size":
-            return sorted(sessions, key=lambda s: s.total_size, reverse=reverse)
+            return sorted(sessions, key=lambda s: s.wire_size, reverse=reverse)
         if column == "agents":
             return sorted(sessions, key=lambda s: len(s.agents), reverse=reverse)
         if column == "#0":
@@ -144,8 +144,11 @@ class SessionManagerApp:
         self.tree.column("#0", width=420, minwidth=200, stretch=True)
         self.tree.column("updated", width=150, minwidth=100, stretch=False)
         self.tree.column("size", width=70, minwidth=50, stretch=False)
-        self.tree.column("agents", width=50, minwidth=40, stretch=False)
+        self.tree.column("agents", width=65, minwidth=50, stretch=False)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.tree.tag_configure("even", background="#ffffff")
+        self.tree.tag_configure("odd", background="#f0f0f0")
 
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=tree_scroll.set)
@@ -262,7 +265,7 @@ class SessionManagerApp:
         heading_font = (_FONT_FAMILY, size, "bold")
 
         self._style.configure(".", font=font)
-        self._style.configure("Treeview", font=font, rowheight=max(20, size * 2))
+        self._style.configure("Treeview", font=font, rowheight=max(24, size * 2 + 4))
         self._style.configure("Treeview.Heading", font=heading_font)
 
         for txt in self._text_widgets:
@@ -329,23 +332,25 @@ class SessionManagerApp:
         for group in groups:
             self.sessions.extend(group.sessions)
 
-        total_size = sum(session.total_size for session in self.sessions)
+        total_wire_size = sum(session.wire_size for session in self.sessions)
         total_sessions = len(self.sessions)
 
-        for session in self._sort_sessions(self.sessions):
+        for idx, session in enumerate(self._sort_sessions(self.sessions)):
+            tag = "even" if idx % 2 == 0 else "odd"
             item = self.tree.insert(
                 "",
                 tk.END,
                 text=session.title or session.session_id,
                 values=(
                     format_timestamp_ms(session.updated_at),
-                    format_size(session.total_size),
+                    format_size(session.wire_size),
                     len(session.agents),
                 ),
+                tags=(tag,),
             )
             self.session_by_item[item] = session
 
-        status_text = f"共 {total_sessions} 个 session，总计 {format_size(total_size)}"
+        status_text = f"共 {total_sessions} 个 session，wire 总计 {format_size(total_wire_size)}"
         self.status.config(text=status_text)
 
     def _on_tree_select(self, _event: tk.Event | None = None) -> None:
@@ -379,7 +384,7 @@ class SessionManagerApp:
             "path": str(session.session_dir),
             "created": format_timestamp_ms(session.created_at),
             "updated": format_timestamp_ms(session.updated_at),
-            "size": format_size(session.total_size),
+            "size": format_size(session.wire_size),
             "agent_count": str(len(session.agents)),
         }
         for key, value in values.items():

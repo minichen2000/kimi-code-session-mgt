@@ -34,6 +34,11 @@ class Session:
         """Return the parent workspace directory name."""
         return self.session_dir.parent.name
 
+    @property
+    def wire_size(self) -> int:
+        """Return the total size of all Agent wire.jsonl logs."""
+        return sum(agent.size for agent in self.agents)
+
 
 @dataclass
 class WorkspaceGroup:
