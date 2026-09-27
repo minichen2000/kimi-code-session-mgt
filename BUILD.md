@@ -51,5 +51,15 @@ uv run python scripts/build_exe.py
 
 The executable will be created at `dist/kimi-session-manager.exe`. It is a single-file, portable build that does not show a console window.
 
+### Application Icon
+
+The executable and the runtime window share the same icon: `assets/icon.ico` (committed to the repository). To regenerate it (requires the dev dependency Pillow):
+
+```bash
+uv run python scripts/generate_icon.py
+```
+
+Colors, corner radius, and text size are constants at the top of that script. The build embeds the icon via `--icon` (file icon) and `--add-data` (runtime window icon).
+
 Pre-built executables are also available on the [GitHub Releases](https://github.com/minichen2000/kimi-code-session-mgt/releases) page.
 

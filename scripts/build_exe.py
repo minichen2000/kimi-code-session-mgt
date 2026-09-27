@@ -17,7 +17,9 @@ def main() -> None:
     _run("mypy", "src")
     _run("pytest")
 
-    entry = Path(__file__).resolve().parent / "entry.py"
+    root = Path(__file__).resolve().parent.parent
+    entry = root / "scripts" / "entry.py"
+    icon = root / "assets" / "icon.ico"
     subprocess.run(
         [
             sys.executable,
@@ -28,6 +30,10 @@ def main() -> None:
             "--clean",
             "--name",
             "kimi-session-manager",
+            "--icon",
+            str(icon),
+            "--add-data",
+            f"{icon};assets",
             str(entry),
         ],
         check=True,

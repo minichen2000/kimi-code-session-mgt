@@ -10,6 +10,8 @@
 - 按最新项目启动规范将 `AGENTS.md` 调整为中文为主。
 - 双推代码到 GitHub / Gitee。
 - 发布 v0.1.0 release。
+- 为 exe 和运行窗口添加 "KW" 图标（`scripts/generate_icon.py` 生成 `assets/icon.ico`，Pillow 仅为开发依赖）。
+- 发布 v0.2.0 release。
 
 ## 待办
 

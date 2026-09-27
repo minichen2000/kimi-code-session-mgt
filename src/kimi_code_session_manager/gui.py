@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import functools
 import shutil
+import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 from kimi_code_session_manager.models import AgentWireLog, Session
@@ -20,6 +22,30 @@ _FONT_SIZES = {"小": 9, "中": 11, "大": 13}
 _DEFAULT_FONT_SIZE_LABEL = "中"
 
 
+def _find_icon() -> Path | None:
+    """Locate the bundled icon file, both frozen and from source."""
+    meipass = getattr(sys, "_MEIPASS", None)
+    candidates = []
+    if meipass:
+        candidates.append(Path(meipass) / "assets" / "icon.ico")
+    candidates.append(Path(__file__).resolve().parent.parent.parent / "assets" / "icon.ico")
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _set_window_icon(root: tk.Tk) -> None:
+    """Set the window/taskbar icon; silently skip when unavailable."""
+    icon = _find_icon()
+    if icon is None:
+        return
+    try:
+        root.iconbitmap(default=str(icon))  # type: ignore[no-untyped-call]
+    except tk.TclError:
+        pass
+
+
 class SessionManagerApp:
     """Main application window."""
 
@@ -28,6 +54,7 @@ class SessionManagerApp:
         self.root.title("Kimi Code Session Manager")
         self.root.geometry("1400x750")
         self.root.minsize(1000, 620)
+        _set_window_icon(self.root)
         self._center_window()
 
         self.sessions: list[Session] = []
