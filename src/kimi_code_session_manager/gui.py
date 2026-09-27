@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import tkinter as tk
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 from kimi_code_session_manager.models import AgentWireLog, Session, WorkspaceGroup
@@ -26,8 +27,10 @@ class SessionManagerApp:
 
         self.groups: list[WorkspaceGroup] = []
         self.session_by_item: dict[str, Session] = {}
+        self.group_by_item: dict[str, WorkspaceGroup] = {}
         self.wire_by_item: dict[str, AgentWireLog] = {}
         self.selected_session: Session | None = None
+        self.selected_group: WorkspaceGroup | None = None
         self.selected_wire: AgentWireLog | None = None
         self._hover_item: str | None = None
 
@@ -217,17 +220,21 @@ class SessionManagerApp:
         self._hide_tooltip()
 
     def _update_button_states(self) -> None:
-        session_selected = self.selected_session is not None
-        self.reveal_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
-        self.delete_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
+        reveal_enabled = self.selected_session is not None or self.selected_group is not None
+        self.reveal_session_btn.config(state=tk.NORMAL if reveal_enabled else tk.DISABLED)
+        self.delete_session_btn.config(
+            state=tk.NORMAL if self.selected_session is not None else tk.DISABLED
+        )
         wire_selected = self.selected_wire is not None
         self.reveal_wire_btn.config(state=tk.NORMAL if wire_selected else tk.DISABLED)
 
     def refresh(self) -> None:
         self.tree.delete(*self.tree.get_children())
         self.session_by_item.clear()
+        self.group_by_item.clear()
         self.wire_by_item.clear()
         self.selected_session = None
+        self.selected_group = None
         self.selected_wire = None
         self._clear_details()
         self._clear_wire_tree()
@@ -249,6 +256,7 @@ class SessionManagerApp:
                 values=("", "", ""),
                 open=True,
             )
+            self.group_by_item[group_node] = group
             for session in group.sessions:
                 item = self.tree.insert(
                     group_node,
@@ -275,6 +283,7 @@ class SessionManagerApp:
         selection = self.tree.selection()
         if not selection:
             self.selected_session = None
+            self.selected_group = None
             self._clear_details()
             self._clear_wire_tree()
             self._update_button_states()
@@ -282,16 +291,27 @@ class SessionManagerApp:
 
         item = selection[0]
         session = self.session_by_item.get(item)
-        if session is None:
+        if session is not None:
+            self.selected_session = session
+            self.selected_group = None
+            self._show_session_details(session)
+            self._populate_wire_tree(session)
+            self._update_button_states()
+            return
+
+        group = self.group_by_item.get(item)
+        if group is not None:
             self.selected_session = None
+            self.selected_group = group
             self._clear_details()
             self._clear_wire_tree()
             self._update_button_states()
             return
 
-        self.selected_session = session
-        self._show_session_details(session)
-        self._populate_wire_tree(session)
+        self.selected_session = None
+        self.selected_group = None
+        self._clear_details()
+        self._clear_wire_tree()
         self._update_button_states()
 
     def _show_session_details(self, session: Session) -> None:
@@ -366,11 +386,12 @@ class SessionManagerApp:
         self.wire_by_item.clear()
 
     def _reveal_session(self) -> None:
-        session = self.selected_session
-        if session is None:
-            messagebox.showinfo("提示", "请先选择一个 session")
-            return
-        reveal_in_file_manager(session.session_dir)
+        if self.selected_session is not None:
+            reveal_in_file_manager(self.selected_session.session_dir)
+        elif self.selected_group is not None:
+            reveal_in_file_manager(Path(self.selected_group.cwd))
+        else:
+            messagebox.showinfo("提示", "请先选择一个 session 或工作目录")
 
     def _reveal_wire(self) -> None:
         wire = self.selected_wire
