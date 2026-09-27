@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import shutil
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -25,8 +26,8 @@ class SessionManagerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Kimi Code Session Manager")
-        self.root.geometry("1400x800")
-        self.root.minsize(1000, 650)
+        self.root.geometry("1400x750")
+        self.root.minsize(1000, 620)
         self._center_window()
 
         self.sessions: list[Session] = []
@@ -54,7 +55,7 @@ class SessionManagerApp:
         """Center the main window on the screen."""
         self.root.update_idletasks()
         width = 1400
-        height = 800
+        height = 750
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         x = max(0, (screen_width - width) // 2)
@@ -78,7 +79,21 @@ class SessionManagerApp:
             self._sort_column = column
             # Default to descending for numeric/time columns, ascending for name.
             self._sort_reverse = column != "#0"
+        self._update_heading_arrows()
         self.refresh()
+
+    def _update_heading_arrows(self) -> None:
+        """Update column headings to show sort direction arrows."""
+        for col, base_text in self._tree_columns.items():
+            arrow = ""
+            if self._sort_column == col:
+                arrow = " ↓" if self._sort_reverse else " ↑"
+            self.tree.heading(
+                col,
+                text=f"{base_text}{arrow}",
+                anchor=tk.W,
+                command=functools.partial(self._on_heading_click, col),
+            )
 
     def _sort_sessions(self, sessions: list[Session]) -> list[Session]:
         column = self._sort_column
@@ -138,21 +153,13 @@ class SessionManagerApp:
             show="tree headings",
             selectmode="browse",
         )
-        self.tree.heading(
-            "#0", text="名称", anchor=tk.W, command=lambda: self._on_heading_click("#0")
-        )
-        self.tree.heading(
-            "updated",
-            text="更新时间",
-            anchor=tk.W,
-            command=lambda: self._on_heading_click("updated"),
-        )
-        self.tree.heading(
-            "size", text="大小", anchor=tk.W, command=lambda: self._on_heading_click("size")
-        )
-        self.tree.heading(
-            "agents", text="Agent 数", anchor=tk.W, command=lambda: self._on_heading_click("agents")
-        )
+        self._tree_columns: dict[str, str] = {
+            "#0": "名称",
+            "updated": "更新时间",
+            "size": "大小",
+            "agents": "Agent 数",
+        }
+        self._update_heading_arrows()
         self.tree.column("#0", width=420, minwidth=200, stretch=True)
         self.tree.column("updated", width=150, minwidth=100, stretch=False)
         self.tree.column("size", width=70, minwidth=50, stretch=False)
