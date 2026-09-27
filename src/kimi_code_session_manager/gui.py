@@ -27,6 +27,7 @@ class SessionManagerApp:
         self.root.title("Kimi Code Session Manager")
         self.root.geometry("1400x800")
         self.root.minsize(1000, 650)
+        self._center_window()
 
         self.sessions: list[Session] = []
         self.session_by_item: dict[str, Session] = {}
@@ -48,6 +49,17 @@ class SessionManagerApp:
 
         self._apply_font_size(_FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
         self.refresh()
+
+    def _center_window(self) -> None:
+        """Center the main window on the screen."""
+        self.root.update_idletasks()
+        width = 1400
+        height = 800
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = max(0, (screen_width - width) // 2)
+        y = max(0, (screen_height - height) // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def _on_paned_configure(self, _event: tk.Event | None = None) -> None:
         """Set the initial sash position once the PanedWindow has a real size."""
@@ -265,7 +277,13 @@ class SessionManagerApp:
         heading_font = (_FONT_FAMILY, size, "bold")
 
         self._style.configure(".", font=font)
-        self._style.configure("Treeview", font=font, rowheight=max(30, size * 2 + 8))
+        self._style.configure(
+            "Treeview",
+            font=font,
+            rowheight=max(30, size * 2 + 8),
+            background="#d9d9d9",
+            fieldbackground="#ffffff",
+        )
         self._style.configure("Treeview.Heading", font=heading_font)
 
         for txt in self._text_widgets:

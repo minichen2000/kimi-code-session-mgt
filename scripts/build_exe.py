@@ -7,7 +7,16 @@ import sys
 from pathlib import Path
 
 
+def _run(*args: str) -> None:
+    subprocess.run([sys.executable, "-m", *args], check=True)
+
+
 def main() -> None:
+    # Ensure code quality before building the executable.
+    _run("ruff", "check", ".")
+    _run("mypy", "src")
+    _run("pytest")
+
     entry = Path(__file__).resolve().parent / "entry.py"
     subprocess.run(
         [
