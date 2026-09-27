@@ -21,14 +21,15 @@ class SessionManagerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Kimi Code Session Manager")
-        self.root.geometry("1400x800")
-        self.root.minsize(900, 600)
+        self.root.geometry("1600x900")
+        self.root.minsize(1100, 700)
 
         self.groups: list[WorkspaceGroup] = []
         self.session_by_item: dict[str, Session] = {}
         self.wire_by_item: dict[str, AgentWireLog] = {}
         self.selected_session: Session | None = None
         self.selected_wire: AgentWireLog | None = None
+        self._hover_item: str | None = None
 
         self._build_toolbar()
         self._build_main_layout()
@@ -71,10 +72,10 @@ class SessionManagerApp:
         self.tree.heading("updated", text="更新时间", anchor=tk.W)
         self.tree.heading("size", text="大小", anchor=tk.W)
         self.tree.heading("agents", text="Agent 数", anchor=tk.W)
-        self.tree.column("#0", width=360)
-        self.tree.column("updated", width=150)
-        self.tree.column("size", width=90)
-        self.tree.column("agents", width=70)
+        self.tree.column("#0", width=520, minwidth=200)
+        self.tree.column("updated", width=150, minwidth=100)
+        self.tree.column("size", width=90, minwidth=60)
+        self.tree.column("agents", width=70, minwidth=50)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -82,6 +83,22 @@ class SessionManagerApp:
         tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+        self.tree.bind("<Motion>", self._on_tree_motion)
+        self.tree.bind("<Leave>", self._on_tree_leave)
+
+        # Left bottom: full text of hovered/selected item
+        info_frame = ttk.LabelFrame(left_frame, text="当前选中完整信息", padding=5)
+        info_frame.pack(fill=tk.X, pady=5)
+
+        self.left_info_text = tk.Text(
+            info_frame,
+            height=3,
+            wrap=tk.WORD,
+            state=tk.DISABLED,
+            relief=tk.FLAT,
+            font=("Microsoft YaHei", 9),
+        )
+        self.left_info_text.pack(fill=tk.X, expand=True)
 
         # Right: details and wire logs
         right_frame = ttk.Frame(paned)
@@ -141,13 +158,13 @@ class SessionManagerApp:
         self.wire_tree = ttk.Treeview(
             wire_list_frame,
             columns=("size",),
-            show="headings",
+            show="tree headings",
             selectmode="browse",
         )
-        self.wire_tree.heading("#0", text="Agent")
+        self.wire_tree.heading("#0", text="Agent 名称")
         self.wire_tree.heading("size", text="大小")
-        self.wire_tree.column("#0", width=120)
-        self.wire_tree.column("size", width=80)
+        self.wire_tree.column("#0", width=150, minwidth=80)
+        self.wire_tree.column("size", width=80, minwidth=60)
         self.wire_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         wire_tree_scroll = ttk.Scrollbar(
@@ -159,9 +176,76 @@ class SessionManagerApp:
         self.wire_tree.bind("<<TreeviewSelect>>", self._on_wire_select)
         self.wire_tree.bind("<Double-1>", lambda _e: self._reveal_wire())
 
+        # Tooltip for tree items
+        self._tooltip = tk.Toplevel(self.root)
+        self._tooltip.withdraw()
+        self._tooltip.overrideredirect(True)
+        self._tooltip_label = ttk.Label(
+            self._tooltip,
+            text="",
+            background="#ffffcc",
+            relief=tk.SOLID,
+            borderwidth=1,
+            padding=3,
+            wraplength=600,
+            justify=tk.LEFT,
+        )
+        self._tooltip_label.pack()
+
     def _build_status_bar(self) -> None:
         self.status = ttk.Label(self.root, text="就绪", relief=tk.SUNKEN, anchor=tk.W)
         self.status.pack(fill=tk.X, side=tk.BOTTOM)
+
+    def _show_tooltip(self, text: str, x: int, y: int) -> None:
+        self._tooltip_label.config(text=text)
+        self._tooltip.deiconify()
+        self._tooltip.geometry(f"+{x + 15}+{y + 15}")
+
+    def _hide_tooltip(self) -> None:
+        self._tooltip.withdraw()
+
+    def _on_tree_motion(self, event: tk.Event) -> None:
+        item = self.tree.identify_row(event.y)
+        if item == self._hover_item:
+            return
+        self._hover_item = item
+
+        if not item:
+            self._hide_tooltip()
+            return
+
+        text = self.tree.item(item, "text")
+        session = self.session_by_item.get(item)
+        if session is not None:
+            text = f"{session.title}\n{session.session_id}\n{session.cwd}"
+        elif text:
+            text = f"工作目录：{text}"
+
+        self._show_tooltip(text, event.x_root, event.y_root)
+        self._update_left_info(item)
+
+    def _on_tree_leave(self, _event: tk.Event | None = None) -> None:
+        self._hover_item = None
+        self._hide_tooltip()
+
+    def _update_left_info(self, item: str | None = None) -> None:
+        if item is None:
+            selection = self.tree.selection()
+            item = selection[0] if selection else None
+
+        text = ""
+        if item:
+            display = self.tree.item(item, "text")
+            session = self.session_by_item.get(item)
+            if session is not None:
+                text = f"标题：{session.title}\nID：{session.session_id}\n工作目录：{session.cwd}"
+            else:
+                text = f"工作目录：{display}"
+
+        self.left_info_text.config(state=tk.NORMAL)
+        self.left_info_text.delete("1.0", tk.END)
+        self.left_info_text.insert(tk.END, text)
+        self.left_info_text.config(state=tk.DISABLED)
 
     def refresh(self) -> None:
         self.tree.delete(*self.tree.get_children())
@@ -171,6 +255,7 @@ class SessionManagerApp:
         self.selected_wire = None
         self._clear_details()
         self._clear_wire_tree()
+        self._update_left_info()
 
         try:
             self.groups = scan_all_sessions()
@@ -223,6 +308,7 @@ class SessionManagerApp:
         self.selected_session = session
         self._show_session_details(session)
         self._populate_wire_tree(session)
+        self._update_left_info(item)
 
     def _show_session_details(self, session: Session) -> None:
         values = {
@@ -245,8 +331,12 @@ class SessionManagerApp:
         txt.insert(tk.END, value)
         txt.config(state=tk.DISABLED)
         # Adjust height to fit wrapped content.
-        lines = int(txt.index(tk.END).split(".")[0]) - 1
-        txt.config(height=max(1, lines))
+        count_result = txt.count("1.0", tk.END, "displaylines")
+        if isinstance(count_result, tuple):
+            display_lines = count_result[0] or 1
+        else:
+            display_lines = count_result or 1
+        txt.config(height=max(1, display_lines))
 
     def _populate_wire_tree(self, session: Session) -> None:
         self.wire_tree.delete(*self.wire_tree.get_children())
