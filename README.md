@@ -5,12 +5,14 @@ A cross-platform GUI tool for managing [Kimi Code](https://kimi-code.moonshot.cn
 ## Features
 
 - Browse all Kimi Code sessions in a flat list.
-- Sort sessions by title, updated time, wire size, or agent count.
+- Sort sessions by title, updated time, wire size, or agent count (click column headers).
 - See session metadata: title, created time, updated time, and wire log size.
 - Inspect every Agent's `wire.jsonl` log inside a session.
 - Reveal session folders or individual `wire.jsonl` files in your file manager.
 - Delete sessions safely with a confirmation dialog.
 - Adjustable font size.
+- Alternating row colors and column dividers for better readability.
+- Window is centered on screen at startup.
 - Zero runtime third-party dependencies — uses Python's built-in `tkinter`.
 
 ## Quick Start
@@ -29,7 +31,9 @@ kimi-session-manager
 
 ### Windows Executable
 
-A single-file executable is also available. See [BUILD.md](BUILD.md) for build instructions.
+Download `kimi-session-manager.exe` from the [GitHub Releases](https://github.com/minichen2000/kimi-code-session-mgt/releases) page. It is a single-file, portable build that does not show a console window.
+
+To build it yourself, see [BUILD.md](BUILD.md).
 
 
 ## Requirements

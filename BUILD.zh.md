@@ -51,3 +51,5 @@ uv run python scripts/build_exe.py
 
 生成的可执行文件位于 `dist/kimi-session-manager.exe`。这是一个单文件绿色版，双击即可运行，不会弹出命令行窗口。
 
+也可以直接在 [GitHub Releases](https://github.com/minichen2000/kimi-code-session-mgt/releases) 页面下载预编译版本。
+

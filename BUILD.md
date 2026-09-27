@@ -51,3 +51,5 @@ uv run python scripts/build_exe.py
 
 The executable will be created at `dist/kimi-session-manager.exe`. It is a single-file, portable build that does not show a console window.
 
+Pre-built executables are also available on the [GitHub Releases](https://github.com/minichen2000/kimi-code-session-mgt/releases) page.
+
