@@ -41,6 +41,7 @@ class SessionManagerApp:
         self._style = ttk.Style()
         self._text_widgets: list[tk.Text] = []
         self._current_font_label = tk.StringVar(value=_DEFAULT_FONT_SIZE_LABEL)
+        self._sash_set = False
 
         self._build_toolbar()
         self._build_main_layout()
@@ -48,18 +49,15 @@ class SessionManagerApp:
 
         self._apply_font_size(_FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
         self.refresh()
-        self.root.bind("<Map>", self._on_window_mapped)
 
-    def _on_window_mapped(self, _event: tk.Event) -> None:
-        """Called once when the window is first shown."""
-        self.root.unbind("<Map>")
-        self._set_sash_position()
-
-    def _set_sash_position(self) -> None:
-        """Set the initial sash position so the left pane takes ~70% width."""
+    def _on_paned_configure(self, _event: tk.Event | None = None) -> None:
+        """Set the initial sash position once the PanedWindow has a real size."""
+        if self._sash_set:
+            return
         width = self._paned.winfo_width()
-        if width > 0:
+        if width > 100:
             self._paned.sashpos(0, int(width * 0.7))  # type: ignore[no-untyped-call]
+            self._sash_set = True
 
     def _build_toolbar(self) -> None:
         toolbar = ttk.Frame(self.root, padding=5)
@@ -89,6 +87,7 @@ class SessionManagerApp:
     def _build_main_layout(self) -> None:
         self._paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         self._paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self._paned.bind("<Configure>", self._on_paned_configure)
 
         # Left: grouped session tree (main area)
         left_frame = ttk.Frame(self._paned)
