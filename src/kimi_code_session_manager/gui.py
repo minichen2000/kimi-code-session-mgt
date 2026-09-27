@@ -161,9 +161,9 @@ class SessionManagerApp:
         }
         self._update_heading_arrows()
         self.tree.column("#0", width=420, minwidth=200, stretch=True)
-        self.tree.column("updated", width=150, minwidth=100, stretch=False)
-        self.tree.column("size", width=70, minwidth=50, stretch=False)
-        self.tree.column("agents", width=80, minwidth=60, stretch=False)
+        self.tree.column("updated", width=160, minwidth=100, stretch=False)
+        self.tree.column("size", width=80, minwidth=50, stretch=False)
+        self.tree.column("agents", width=100, minwidth=70, stretch=False)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.tree.tag_configure("even", background="#ffffff")
