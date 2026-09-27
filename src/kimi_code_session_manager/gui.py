@@ -15,6 +15,10 @@ from kimi_code_session_manager.utils import (
     reveal_in_file_manager,
 )
 
+_FONT_FAMILY = "Microsoft YaHei"
+_FONT_SIZES = {"小": 9, "中": 11, "大": 13}
+_DEFAULT_FONT_SIZE_LABEL = "中"
+
 
 class SessionManagerApp:
     """Main application window."""
@@ -34,10 +38,15 @@ class SessionManagerApp:
         self.selected_wire: AgentWireLog | None = None
         self._hover_item: str | None = None
 
+        self._style = ttk.Style()
+        self._text_widgets: list[tk.Text] = []
+        self._current_font_label = tk.StringVar(value=_DEFAULT_FONT_SIZE_LABEL)
+
         self._build_toolbar()
         self._build_main_layout()
         self._build_status_bar()
 
+        self._apply_font_size(_FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
         self.refresh()
 
     def _build_toolbar(self) -> None:
@@ -53,6 +62,17 @@ class SessionManagerApp:
             toolbar, text="删除 Session", command=self._delete_session, state=tk.DISABLED
         )
         self.delete_session_btn.pack(side=tk.LEFT, padx=2)
+
+        ttk.Label(toolbar, text="字体:").pack(side=tk.RIGHT, padx=(10, 2))
+        font_combo = ttk.Combobox(
+            toolbar,
+            textvariable=self._current_font_label,
+            values=list(_FONT_SIZES.keys()),
+            state="readonly",
+            width=5,
+        )
+        font_combo.pack(side=tk.RIGHT, padx=2)
+        font_combo.bind("<<ComboboxSelected>>", self._on_font_changed)
 
     def _build_main_layout(self) -> None:
         paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
@@ -120,12 +140,12 @@ class SessionManagerApp:
                 wrap=tk.WORD,
                 state=tk.DISABLED,
                 relief=tk.FLAT,
-                font=("Microsoft YaHei", 9),
                 padx=0,
                 pady=0,
             )
             txt.grid(row=idx, column=1, sticky=tk.EW, padx=5, pady=2)
             self.detail_texts[key] = txt
+            self._text_widgets.append(txt)
 
         details_frame.columnconfigure(1, weight=1)
 
@@ -187,6 +207,26 @@ class SessionManagerApp:
     def _build_status_bar(self) -> None:
         self.status = ttk.Label(self.root, text="就绪", relief=tk.SUNKEN, anchor=tk.W)
         self.status.pack(fill=tk.X, side=tk.BOTTOM)
+
+    def _on_font_changed(self, _event: tk.Event | None = None) -> None:
+        label = self._current_font_label.get()
+        size = _FONT_SIZES.get(label, _FONT_SIZES[_DEFAULT_FONT_SIZE_LABEL])
+        self._apply_font_size(size)
+
+    def _apply_font_size(self, size: int) -> None:
+        font = (_FONT_FAMILY, size)
+        heading_font = (_FONT_FAMILY, size, "bold")
+
+        self._style.configure(".", font=font)
+        self._style.configure("Treeview", font=font, rowheight=max(20, size * 2))
+        self._style.configure("Treeview.Heading", font=heading_font)
+
+        for txt in self._text_widgets:
+            txt.config(font=font)
+
+        # Re-calculate detail text heights after font change.
+        if self.selected_session is not None:
+            self._show_session_details(self.selected_session)
 
     def _show_tooltip(self, text: str, x: int, y: int) -> None:
         self._tooltip_label.config(text=text)
