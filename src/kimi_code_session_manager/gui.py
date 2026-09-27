@@ -26,8 +26,8 @@ class SessionManagerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Kimi Code Session Manager")
-        self.root.geometry("1600x900")
-        self.root.minsize(1100, 700)
+        self.root.geometry("1400x800")
+        self.root.minsize(1000, 650)
 
         self.groups: list[WorkspaceGroup] = []
         self.session_by_item: dict[str, Session] = {}
@@ -80,7 +80,7 @@ class SessionManagerApp:
 
         # Left: grouped session tree (main area)
         left_frame = ttk.Frame(paned)
-        paned.add(left_frame, weight=3)
+        paned.add(left_frame, weight=2)
 
         ttk.Label(left_frame, text="工作目录 / Sessions").pack(anchor=tk.W)
 
@@ -97,10 +97,10 @@ class SessionManagerApp:
         self.tree.heading("updated", text="更新时间", anchor=tk.W)
         self.tree.heading("size", text="大小", anchor=tk.W)
         self.tree.heading("agents", text="Agent 数", anchor=tk.W)
-        self.tree.column("#0", width=520, minwidth=200)
-        self.tree.column("updated", width=150, minwidth=100)
-        self.tree.column("size", width=90, minwidth=60)
-        self.tree.column("agents", width=70, minwidth=50)
+        self.tree.column("#0", width=420, minwidth=200)
+        self.tree.column("updated", width=140, minwidth=100)
+        self.tree.column("size", width=80, minwidth=60)
+        self.tree.column("agents", width=60, minwidth=50)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
