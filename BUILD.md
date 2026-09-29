@@ -60,7 +60,7 @@ git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin master --tags   # also push to the GitHub remote
 ```
 
-Gitee has no free CI; sync the Gitee release page manually by uploading the GitHub-built artifact.
+GitHub is the only release channel; Gitee only mirrors code and tags, with no release page.
 
 ### Application Icon
 

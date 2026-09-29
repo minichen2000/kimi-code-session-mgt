@@ -60,7 +60,7 @@ git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin master --tags   # 同时推送到 GitHub 仓库
 ```
 
-Gitee 没有免费 CI，Gitee 的 Release 页面需要手动把 GitHub 构建产物上传一次。
+GitHub 是唯一的 release 渠道；Gitee 只同步代码和 tag，不建 Release 页面。
 
 ### 应用图标
 

@@ -16,7 +16,7 @@ Kimi Code Session Manager 是一个跨平台的 Kimi Code 会话管理 GUI 工�
   - macOS: `open -R "<路径>"`
   - Linux: `xdg-open "<目录>"`
 - **打包**：使用 PyInstaller 构建单文件 Windows 可执行版（`--onefile --noconsole`），入口为 `scripts/entry.py`。
-- **发版**：打 `v*` tag 推送即由 GitHub Actions（`.github/workflows/release.yml`）云端构建 exe 并自动创建 Release 上传产物，不在本地构建后手动上传。Gitee 无免费 CI，Release 页面手动同步 GitHub 产物。
+- **发版**：打 `v*` tag 推送即由 GitHub Actions（`.github/workflows/release.yml`）云端构建 exe 并自动创建 Release 上传产物，不在本地构建后手动上传。GitHub 是唯一 release 渠道，Gitee 只推代码和 tag、不建 Release 页面。
 - **应用图标**：exe 文件图标和运行时窗口图标共用 `assets/icon.ico`（"KW" 字样，已入库）。由 `scripts/generate_icon.py`（Pillow）生成；打包时 `--icon` 设置文件图标，`--add-data` 内嵌 ico 供 `gui.py` 的 `iconbitmap` 设置窗口图标。
 
 ## 编码约定
