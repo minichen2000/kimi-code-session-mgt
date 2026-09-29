@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Releases are now built in the cloud: pushing a `v*` tag triggers GitHub Actions to build the single-file executable and publish the release automatically.
+
 ## [0.3.0] - 2026-09-29
 
 ### Added

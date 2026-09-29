@@ -43,13 +43,24 @@ uv run ruff format .
 uv build
 ```
 
-## Build Single-File Windows Executable
+## Build Single-File Windows Executable (Local)
 
 ```bash
 uv run python scripts/build_exe.py
 ```
 
 The executable will be created at `dist/kimi-session-manager.exe`. It is a single-file, portable build that does not show a console window.
+
+## Publish a Release (Cloud Build)
+
+Pushing a `v*` tag triggers GitHub Actions (`.github/workflows/release.yml`): a `windows-latest` runner installs dependencies, runs `scripts/build_exe.py` (which includes the ruff/mypy/pytest checks), builds the exe, then creates the GitHub Release, uploads the asset, and generates release notes automatically:
+
+```bash
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin master --tags   # also push to the GitHub remote
+```
+
+Gitee has no free CI; sync the Gitee release page manually by uploading the GitHub-built artifact.
 
 ### Application Icon
 
