@@ -13,6 +13,7 @@
 - 为 exe 和运行窗口添加 "KW" 图标（`scripts/generate_icon.py` 生成 `assets/icon.ico`，Pillow 仅为开发依赖）。
 - 发布 v0.2.0 release。
 - wire 日志面板新增“查看”按钮：用系统默认程序打开选中的 wire.jsonl（utils.py 新增 `open_with_default_app`）。
+- 发布 v0.3.0 release（GitHub / Gitee 双推，附单文件 exe）。
 
 ## 待办
 
