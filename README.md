@@ -8,6 +8,7 @@ A cross-platform GUI tool for managing [Kimi Code](https://kimi-code.moonshot.cn
 - Sort sessions by title, updated time, wire size, or agent count (click column headers).
 - See session metadata: title, created time, updated time, and wire log size.
 - Inspect every Agent's `wire.jsonl` log inside a session.
+- Open a selected `wire.jsonl` with the system default application ("查看" button).
 - Reveal session folders or individual `wire.jsonl` files in your file manager.
 - Delete sessions safely with a confirmation dialog.
 - Adjustable font size.

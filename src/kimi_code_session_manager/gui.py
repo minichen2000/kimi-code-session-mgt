@@ -14,6 +14,7 @@ from kimi_code_session_manager.scanner import scan_all_sessions
 from kimi_code_session_manager.utils import (
     format_size,
     format_timestamp_ms,
+    open_with_default_app,
     reveal_in_file_manager,
 )
 
@@ -252,6 +253,10 @@ class SessionManagerApp:
         wire_top = ttk.Frame(wire_frame)
         wire_top.pack(fill=tk.X)
 
+        self.open_wire_btn = ttk.Button(
+            wire_top, text="查看", command=self._open_wire, state=tk.DISABLED
+        )
+        self.open_wire_btn.pack(side=tk.LEFT, padx=2)
         self.reveal_wire_btn = ttk.Button(
             wire_top, text="在文件夹中显示", command=self._reveal_wire, state=tk.DISABLED
         )
@@ -365,6 +370,7 @@ class SessionManagerApp:
         self.reveal_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
         self.delete_session_btn.config(state=tk.NORMAL if session_selected else tk.DISABLED)
         wire_selected = self.selected_wire is not None
+        self.open_wire_btn.config(state=tk.NORMAL if wire_selected else tk.DISABLED)
         self.reveal_wire_btn.config(state=tk.NORMAL if wire_selected else tk.DISABLED)
 
     def refresh(self) -> None:
@@ -508,6 +514,16 @@ class SessionManagerApp:
             messagebox.showinfo("提示", "请先选择一个 session")
             return
         reveal_in_file_manager(session.session_dir)
+
+    def _open_wire(self) -> None:
+        wire = self.selected_wire
+        if wire is None:
+            messagebox.showinfo("提示", "请先选择一个 wire.jsonl 日志")
+            return
+        try:
+            open_with_default_app(wire.path)
+        except OSError as e:
+            messagebox.showerror("打开失败", f"无法用默认程序打开：{e}")
 
     def _reveal_wire(self) -> None:
         wire = self.selected_wire

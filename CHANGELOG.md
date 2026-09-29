@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2026-09-29
+
+### Added
+
+- "查看" button for a selected Agent wire.jsonl log: opens it with the system default application (same as double-clicking the file).
+
 ## [0.2.0] - 2026-09-27
 
 ### Added

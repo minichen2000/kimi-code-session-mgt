@@ -8,6 +8,7 @@
 - 点击列标题按标题、更新时间、wire 大小、Agent 数量排序。
 - 查看 session 元数据：标题、创建时间、更新时间、wire 日志大小。
 - 查看某个 session 下每个 Agent 的 `wire.jsonl` 日志。
+- “查看”按钮用系统默认程序打开选中的 `wire.jsonl` 文件。
 - 在文件管理器中打开 session 目录或某个 `wire.jsonl` 文件。
 - 删除 session 前会弹出确认对话框。
 - 可调节字体大小。

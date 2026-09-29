@@ -62,6 +62,19 @@ def reveal_in_file_manager(path: Path) -> None:
         subprocess.run(["xdg-open", target], check=False)
 
 
+def open_with_default_app(path: Path) -> None:
+    """Open the file with the system default application, like double-clicking it."""
+    system = platform.system()
+    absolute = str(path.resolve())
+
+    if system == "Windows":
+        os.startfile(absolute)
+    elif system == "Darwin":
+        subprocess.run(["open", absolute], check=False)
+    else:
+        subprocess.run(["xdg-open", absolute], check=False)
+
+
 def get_directory_size(path: Path) -> int:
     """Calculate total byte size of a directory recursively."""
     total = 0
