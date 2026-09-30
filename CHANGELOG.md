@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2026-09-30
+
+### Added
+
+- Session list now sorts by updated time descending on startup.
 
 ### Changed
 

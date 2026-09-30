@@ -15,6 +15,8 @@
 - wire 日志面板新增“查看”按钮：用系统默认程序打开选中的 wire.jsonl（utils.py 新增 `open_with_default_app`）。
 - 发布 v0.3.0 release（GitHub / Gitee 双推，附单文件 exe）。
 - 新增 `.github/workflows/release.yml`：push `v*` tag 云端构建 exe 并自动发布 GitHub Release，本地构建上传不再是发版流程。明确 GitHub 为唯一 release 渠道，Gitee 只推代码不发 Release（v0.3.0 及以前的 Gitee Release 页面保留，不再更新）。
+- 左侧 session 列表启动时默认按更新时间降序排列（`gui.py` 初始 `_sort_column="updated"`、`_sort_reverse=True`）。
+- 发布 v0.4.0 release（默认按更新时间降序 + 云端 CI 构建流程，GitHub 唯一 release 渠道）。
 
 ## 待办
 

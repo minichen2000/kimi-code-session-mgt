@@ -69,8 +69,8 @@ class SessionManagerApp:
         self._text_widgets: list[tk.Text] = []
         self._current_font_label = tk.StringVar(value=_DEFAULT_FONT_SIZE_LABEL)
         self._sash_set = False
-        self._sort_column: str | None = None
-        self._sort_reverse = False
+        self._sort_column: str | None = "updated"
+        self._sort_reverse = True
 
         self._build_toolbar()
         self._build_main_layout()
